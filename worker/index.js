@@ -54,69 +54,63 @@ function encodeBase64Url(string) {
 }
 
 async function handleDriveToken(env) {
-  const clientEmail = env.DRIVE_CLIENT_EMAIL;
-  let privateKey = env.DRIVE_PRIVATE_KEY;
   const folderId = env.DRIVE_FOLDER_ID;
+  let tokenData;
 
-  if (!clientEmail || !privateKey) {
-    throw new Error("Faltan credenciales de Google Drive en el Worker (DRIVE_CLIENT_EMAIL o DRIVE_PRIVATE_KEY)");
+  // MÉTODO 1: OAuth 2.0 con Refresh Token (Client ID + Client Secret)
+  if (env.DRIVE_CLIENT_ID && env.DRIVE_CLIENT_SECRET && env.DRIVE_REFRESH_TOKEN) {
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `client_id=${env.DRIVE_CLIENT_ID}&client_secret=${env.DRIVE_CLIENT_SECRET}&refresh_token=${env.DRIVE_REFRESH_TOKEN}&grant_type=refresh_token`
+    });
+    tokenData = await tokenRes.json();
+  } 
+  // MÉTODO 2: Service Account (Email + Private Key)
+  else if (env.DRIVE_CLIENT_EMAIL && env.DRIVE_PRIVATE_KEY) {
+    const clientEmail = env.DRIVE_CLIENT_EMAIL;
+    let privateKey = env.DRIVE_PRIVATE_KEY.replace(/\\n/g, '\n');
+    
+    const pemHeader = "-----BEGIN PRIVATE KEY-----";
+    const pemFooter = "-----END PRIVATE KEY-----";
+    if (!privateKey.includes(pemHeader)) throw new Error("La Private Key es inválida.");
+    
+    const pemContents = privateKey.substring(
+      privateKey.indexOf(pemHeader) + pemHeader.length,
+      privateKey.indexOf(pemFooter)
+    ).replace(/\s/g, '');
+
+    const binaryDer = str2ab(atob(pemContents));
+    const key = await crypto.subtle.importKey(
+      "pkcs8", binaryDer, { name: "RSASSA-PKCS1-v1_5", hash: { name: "SHA-256" } }, false, ["sign"]
+    );
+
+    const header = encodeBase64Url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
+    const iat = Math.floor(Date.now() / 1000);
+    const exp = iat + 3600;
+    
+    const payload = encodeBase64Url(JSON.stringify({
+      iss: clientEmail,
+      scope: "https://www.googleapis.com/auth/drive.file",
+      aud: "https://oauth2.googleapis.com/token",
+      exp: exp,
+      iat: iat
+    }));
+
+    const signatureInput = `${header}.${payload}`;
+    const signatureBuffer = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, new TextEncoder().encode(signatureInput));
+    const signature = encodeBase64Url(String.fromCharCode(...new Uint8Array(signatureBuffer)));
+    const jwt = `${signatureInput}.${signature}`;
+
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`
+    });
+    tokenData = await tokenRes.json();
+  } else {
+    throw new Error("Faltan credenciales de Google Drive en el Worker. Configura (CLIENT_ID, SECRET y REFRESH_TOKEN) o (CLIENT_EMAIL y PRIVATE_KEY).");
   }
-
-  // Limpiar llave privada de escapes
-  privateKey = privateKey.replace(/\\n/g, '\n');
-  
-  // Extraer contenido base64 del PEM
-  const pemHeader = "-----BEGIN PRIVATE KEY-----";
-  const pemFooter = "-----END PRIVATE KEY-----";
-  const pemContents = privateKey.substring(
-    privateKey.indexOf(pemHeader) + pemHeader.length,
-    privateKey.indexOf(pemFooter)
-  ).replace(/\s/g, '');
-
-  const binaryDerString = atob(pemContents);
-  const binaryDer = str2ab(binaryDerString);
-
-  // Importar llave para RS256
-  const key = await crypto.subtle.importKey(
-    "pkcs8",
-    binaryDer,
-    { name: "RSASSA-PKCS1-v1_5", hash: { name: "SHA-256" } },
-    false,
-    ["sign"]
-  );
-
-  const header = encodeBase64Url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
-  const iat = Math.floor(Date.now() / 1000);
-  const exp = iat + 3600;
-  
-  const payload = encodeBase64Url(JSON.stringify({
-    iss: clientEmail,
-    scope: "https://www.googleapis.com/auth/drive.file",
-    aud: "https://oauth2.googleapis.com/token",
-    exp: exp,
-    iat: iat
-  }));
-
-  const signatureInput = `${header}.${payload}`;
-  const signatureInputBuffer = new TextEncoder().encode(signatureInput);
-
-  const signatureBuffer = await crypto.subtle.sign(
-    "RSASSA-PKCS1-v1_5",
-    key,
-    signatureInputBuffer
-  );
-
-  const signature = encodeBase64Url(String.fromCharCode(...new Uint8Array(signatureBuffer)));
-  const jwt = `${signatureInput}.${signature}`;
-
-  // Intercambiar JWT por Access Token
-  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`
-  });
-
-  const tokenData = await tokenRes.json();
 
   if (!tokenData.access_token) {
     throw new Error("Error al obtener token de Google: " + JSON.stringify(tokenData));
