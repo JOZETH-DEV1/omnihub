@@ -54,22 +54,22 @@ function encodeBase64Url(string) {
 }
 
 async function handleDriveToken(env) {
-  const folderId = env.DRIVE_FOLDER_ID;
+  const folderId = env.GOOGLE_DRIVE_FOLDER_ID;
   let tokenData;
 
   // MÉTODO 1: OAuth 2.0 con Refresh Token (Client ID + Client Secret)
-  if (env.DRIVE_CLIENT_ID && env.DRIVE_CLIENT_SECRET && env.DRIVE_REFRESH_TOKEN) {
+  if (env.GOOGLE_DRIVE_CLIENT_ID && env.GOOGLE_DRIVE_CLIENT_SECRET && env.GOOGLE_DRIVE_REFRESH_TOKEN) {
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: `client_id=${env.DRIVE_CLIENT_ID}&client_secret=${env.DRIVE_CLIENT_SECRET}&refresh_token=${env.DRIVE_REFRESH_TOKEN}&grant_type=refresh_token`
+      body: `client_id=${env.GOOGLE_DRIVE_CLIENT_ID}&client_secret=${env.GOOGLE_DRIVE_CLIENT_SECRET}&refresh_token=${env.GOOGLE_DRIVE_REFRESH_TOKEN}&grant_type=refresh_token`
     });
     tokenData = await tokenRes.json();
   } 
   // MÉTODO 2: Service Account (Email + Private Key)
-  else if (env.DRIVE_CLIENT_EMAIL && env.DRIVE_PRIVATE_KEY) {
-    const clientEmail = env.DRIVE_CLIENT_EMAIL;
-    let privateKey = env.DRIVE_PRIVATE_KEY.replace(/\\n/g, '\n');
+  else if (env.GOOGLE_DRIVE_CLIENT_EMAIL && env.GOOGLE_DRIVE_PRIVATE_KEY) {
+    const clientEmail = env.GOOGLE_DRIVE_CLIENT_EMAIL;
+    let privateKey = env.GOOGLE_DRIVE_PRIVATE_KEY.replace(/\\n/g, '\n');
     
     const pemHeader = "-----BEGIN PRIVATE KEY-----";
     const pemFooter = "-----END PRIVATE KEY-----";
