@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { Filter, Flame, Clock, Sparkles, Inbox } from "lucide-react";

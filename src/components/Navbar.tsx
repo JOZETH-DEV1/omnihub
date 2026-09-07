@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Link from "next/link";
 import { User, UploadCloud, Search, Menu, LogOut, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
