@@ -4,18 +4,86 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { UploadCloud, File, Image as ImageIcon, CheckCircle, AlertCircle } from "lucide-react";
+import { UploadCloud, File, Image as ImageIcon, CheckCircle, Save } from "lucide-react";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 export default function UploadPage() {
-  const { user, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const router = useRouter();
+  
   const [fileMode, setFileMode] = useState<"image" | "file">("file");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
       router.push("/login");
     }
   }, [user, loading, router]);
+
+  const handlePublish = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !userProfile) return;
+    if (!title || !description || !selectedFile) {
+      alert("Por favor completa todos los campos y selecciona un archivo.");
+      return;
+    }
+
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    if (!cloudName) {
+      alert("Falta configurar NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME");
+      return;
+    }
+
+    setIsPublishing(true);
+
+    try {
+      // 1. Subir a Cloudinary
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("upload_preset", "omnihub_preset");
+
+      // Para archivos pesados (ZIP/APK) Cloudinary requiere resource_type: raw
+      const resourceType = fileMode === "image" ? "image" : "raw";
+      
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, {
+        method: "POST",
+        body: formData
+      });
+      
+      const data = await res.json();
+      
+      if (!data.secure_url) {
+        throw new Error(data.error?.message || "Error al subir el archivo.");
+      }
+
+      // 2. Guardar en Firestore
+      await addDoc(collection(db, "posts"), {
+        title,
+        description,
+        fileUrl: data.secure_url,
+        fileType: fileMode,
+        authorId: user.uid,
+        authorUsername: userProfile.username,
+        authorPhoto: userProfile.photoURL,
+        likesCount: 0,
+        commentsCount: 0,
+        createdAt: serverTimestamp()
+      });
+
+      // 3. Redirigir al explorador
+      router.push("/explore");
+
+    } catch (error: any) {
+      console.error(error);
+      alert("Ocurrió un error: " + error.message);
+    } finally {
+      setIsPublishing(false);
+    }
+  };
 
   if (loading || !user) return null;
 
@@ -35,7 +103,7 @@ export default function UploadPage() {
           <div className="flex gap-4 mb-8 bg-slate-950 p-2 rounded-2xl">
             <button 
               type="button"
-              onClick={() => setFileMode("file")}
+              onClick={() => { setFileMode("file"); setSelectedFile(null); }}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all ${
                 fileMode === "file" 
                   ? "bg-cyan-600 text-white shadow-lg" 
@@ -47,7 +115,7 @@ export default function UploadPage() {
             </button>
             <button 
               type="button"
-              onClick={() => setFileMode("image")}
+              onClick={() => { setFileMode("image"); setSelectedFile(null); }}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all ${
                 fileMode === "image" 
                   ? "bg-cyan-600 text-white shadow-lg" 
@@ -60,11 +128,14 @@ export default function UploadPage() {
           </div>
 
           {/* Formulario */}
-          <form className="space-y-6">
+          <form className="space-y-6" onSubmit={handlePublish}>
             <div>
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Título de la publicación</label>
               <input 
                 type="text" 
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 placeholder={fileMode === "file" ? "Ej. Increíble mod de texturas" : "Ej. Captura de pantalla épica"}
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all"
               />
@@ -74,30 +145,54 @@ export default function UploadPage() {
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Descripción</label>
               <textarea 
                 rows={4}
+                required
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe qué hace especial a este archivo..."
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all resize-none"
               ></textarea>
             </div>
 
-            {/* Zona de Drag & Drop */}
-            <div className="border-2 border-dashed border-cyan-800/50 hover:border-cyan-500 bg-cyan-950/10 rounded-2xl p-10 flex flex-col items-center justify-center text-center transition-all cursor-pointer group">
+            {/* Zona de Input (Disfrazada de Drag & Drop) */}
+            <label className="border-2 border-dashed border-cyan-800/50 hover:border-cyan-500 bg-cyan-950/10 rounded-2xl p-10 flex flex-col items-center justify-center text-center transition-all cursor-pointer group">
+              <input 
+                type="file" 
+                required
+                accept={fileMode === "image" ? "image/*" : ".zip,.apk,.rar,.mcpack"}
+                className="hidden" 
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    setSelectedFile(e.target.files[0]);
+                  }
+                }}
+              />
               <div className="w-16 h-16 bg-cyan-900/50 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <UploadCloud className="w-8 h-8 text-cyan-400" />
+                {selectedFile ? <CheckCircle className="w-8 h-8 text-green-400" /> : <UploadCloud className="w-8 h-8 text-cyan-400" />}
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Arrastra tu archivo aquí</h3>
-              <p className="text-sm text-slate-400 mb-6">o haz clic para explorar tus carpetas</p>
+              <h3 className="text-lg font-bold text-white mb-2">
+                {selectedFile ? selectedFile.name : "Toca para seleccionar tu archivo"}
+              </h3>
+              <p className="text-sm text-slate-400 mb-6">
+                {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : "Explora tus carpetas locales"}
+              </p>
               
-              <button type="button" className="px-6 py-2 bg-slate-800 text-slate-300 rounded-full text-sm font-medium hover:bg-slate-700 hover:text-white transition-colors">
-                Seleccionar {fileMode === "image" ? "imagen" : "archivo"}
-              </button>
-            </div>
+              <div className="px-6 py-2 bg-slate-800 text-slate-300 rounded-full text-sm font-medium hover:bg-slate-700 hover:text-white transition-colors">
+                {selectedFile ? "Cambiar archivo" : `Seleccionar ${fileMode === "image" ? "imagen" : "archivo"}`}
+              </div>
+            </label>
 
             <div className="pt-4 border-t border-slate-800 flex justify-end">
               <button 
-                type="button"
-                className="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(34,211,238,0.3)] flex items-center gap-2"
+                type="submit"
+                disabled={isPublishing}
+                className="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(34,211,238,0.3)] flex items-center gap-2 disabled:opacity-50"
               >
-                Publicar Ahora
+                {isPublishing ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <Save className="w-5 h-5" />
+                )}
+                {isPublishing ? "Subiendo archivo..." : "Publicar Ahora"}
               </button>
             </div>
           </form>
