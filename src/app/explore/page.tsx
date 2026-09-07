@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import { Filter, Flame, Clock, Sparkles } from "lucide-react";
 
 export default function ExplorePage() {
   const categories = ["Todos", "Minecraft", "Android APKs", "Archivos ZIP", "Audio / Video"];
+  const [activeCategory, setActiveCategory] = useState("Todos");
+  const [activeFilter, setActiveFilter] = useState("Tendencias");
 
   return (
     <>
@@ -18,12 +21,13 @@ export default function ExplorePage() {
             <p className="text-slate-400">Descubre los mejores aportes de la comunidad profunda.</p>
           </div>
           
-          <div className="flex items-center gap-4 bg-slate-900/60 p-2 rounded-2xl border border-slate-700/50 backdrop-blur-md overflow-x-auto w-full md:w-auto">
-            {categories.map((cat, i) => (
+          <div className="flex items-center gap-4 bg-slate-900/60 p-2 rounded-2xl border border-slate-700/50 backdrop-blur-md overflow-x-auto w-full md:w-auto scrollbar-hide">
+            {categories.map((cat) => (
               <button 
                 key={cat} 
+                onClick={() => setActiveCategory(cat)}
                 className={`px-4 py-2 rounded-xl whitespace-nowrap text-sm font-medium transition-all ${
-                  i === 0 
+                  activeCategory === cat
                     ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-[0_0_15px_rgba(34,211,238,0.4)]" 
                     : "text-slate-400 hover:text-white hover:bg-slate-800"
                 }`}
@@ -34,23 +38,40 @@ export default function ExplorePage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 mb-8 text-sm">
-          <button className="flex items-center gap-2 text-cyan-400 font-medium px-3 py-1.5 bg-cyan-950/50 rounded-lg border border-cyan-800">
+        <div className="flex flex-wrap items-center gap-4 mb-8 text-sm">
+          <button 
+            onClick={() => setActiveFilter("Tendencias")}
+            className={`flex items-center gap-2 font-medium px-4 py-2 rounded-xl transition-all ${
+              activeFilter === "Tendencias" ? "text-cyan-400 bg-cyan-950/50 border border-cyan-800" : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
             <Flame className="w-4 h-4" />
             Tendencias
           </button>
-          <button className="flex items-center gap-2 text-slate-400 hover:text-slate-200 font-medium px-3 py-1.5 transition-colors">
+          
+          <button 
+            onClick={() => setActiveFilter("Recientes")}
+            className={`flex items-center gap-2 font-medium px-4 py-2 rounded-xl transition-all ${
+              activeFilter === "Recientes" ? "text-cyan-400 bg-cyan-950/50 border border-cyan-800" : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
             <Clock className="w-4 h-4" />
             Más Recientes
           </button>
-          <button className="flex items-center gap-2 text-slate-400 hover:text-slate-200 font-medium px-3 py-1.5 transition-colors">
+          
+          <button 
+            onClick={() => setActiveFilter("Destacados")}
+            className={`flex items-center gap-2 font-medium px-4 py-2 rounded-xl transition-all ${
+              activeFilter === "Destacados" ? "text-cyan-400 bg-cyan-950/50 border border-cyan-800" : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
             <Sparkles className="w-4 h-4" />
             Destacados
           </button>
           
-          <div className="flex-1"></div>
+          <div className="flex-1 min-w-[20px]"></div>
           
-          <button className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
+          <button className="flex items-center gap-2 text-slate-400 hover:text-white bg-slate-900/50 hover:bg-slate-800 px-4 py-2 rounded-xl border border-slate-800 transition-all">
             <Filter className="w-4 h-4" />
             Filtros
           </button>
