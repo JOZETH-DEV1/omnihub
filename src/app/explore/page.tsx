@@ -1,13 +1,34 @@
 "use client";
 
 import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
-import { Filter, Flame, Clock, Sparkles } from "lucide-react";
+import { Filter, Flame, Clock, Sparkles, Inbox } from "lucide-react";
+import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function ExplorePage() {
   const categories = ["Todos", "Minecraft", "Android APKs", "Archivos ZIP", "Audio / Video"];
   const [activeCategory, setActiveCategory] = useState("Todos");
   const [activeFilter, setActiveFilter] = useState("Tendencias");
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadPosts() {
+      try {
+        const q = query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(20));
+        const querySnapshot = await getDocs(q);
+        const postsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setPosts(postsData);
+      } catch (error) {
+        console.error("Error loading posts:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadPosts();
+  }, [activeCategory, activeFilter]); // Dependencias para futuro filtrado
 
   return (
     <>
@@ -77,18 +98,32 @@ export default function ExplorePage() {
           </button>
         </div>
 
-        {/* Grid de contenido */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <PostCard key={i} index={i} />
-          ))}
-        </div>
+        {/* Grid de contenido de Firestore */}
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : posts.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {posts.map((post, i) => (
+              <PostCard key={post.id} index={i} post={post} />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 text-center bg-slate-900/20 rounded-3xl border border-slate-800 border-dashed">
+            <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mb-4">
+              <Inbox className="w-8 h-8 text-slate-500" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Aún no hay exploraciones</h3>
+            <p className="text-slate-400 max-w-md">Sé el primero en subir un aporte y tu contenido aparecerá aquí para toda la comunidad.</p>
+          </div>
+        )}
       </div>
     </>
   );
 }
 
-function PostCard({ index }: { index: number }) {
+function PostCard({ index, post }: { index: number, post: any }) {
   // Generar gradientes dinámicos en base al index para diferenciarlos visualmente
   const gradients = [
     "from-blue-600 to-cyan-400",
@@ -113,15 +148,21 @@ function PostCard({ index }: { index: number }) {
       </div>
       
       <div className="p-5 relative z-20">
-        <h3 className="text-lg font-bold text-slate-100 mb-2 group-hover:text-cyan-400 transition-colors">Digital Drop {index}</h3>
+        <h3 className="text-lg font-bold text-slate-100 mb-2 group-hover:text-cyan-400 transition-colors">
+          {post?.title || `Digital Drop ${index}`}
+        </h3>
         <p className="text-sm text-slate-400 line-clamp-2 mb-4">
-          Una increíble aportación a la plataforma de Omnihub. Descarga e interactúa con el mejor contenido exclusivo de nuestra comunidad.
+          {post?.description || "Una increíble aportación a la plataforma de Omnihub. Descarga e interactúa con el mejor contenido exclusivo de nuestra comunidad."}
         </p>
         
         <div className="flex items-center justify-between pt-4 border-t border-slate-800">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500"></div>
-            <span className="text-xs font-medium text-slate-300">@usuario_pro</span>
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 overflow-hidden">
+              {post?.authorPhoto ? <img src={post.authorPhoto} className="w-full h-full object-cover" /> : null}
+            </div>
+            <span className="text-xs font-medium text-slate-300">
+              @{post?.authorUsername || "usuario_pro"}
+            </span>
           </div>
           <span className="text-xs text-cyan-400 bg-cyan-950/50 px-2 py-1 rounded-md font-semibold border border-cyan-800/50">Descargar</span>
         </div>

@@ -166,21 +166,54 @@ export default function ProfilePage() {
                 {/* Body */}
                 <div className="p-6 space-y-5">
                   <div className="flex flex-col items-center mb-6">
-                    <div className="relative group cursor-pointer">
+                    <label className="relative group cursor-pointer">
                       <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-slate-600 bg-slate-800 group-hover:border-cyan-500 transition-colors">
                         <img src={editForm.photoURL} alt="Preview" className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" />
                       </div>
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <Camera className="w-6 h-6 text-white drop-shadow-md" />
                       </div>
-                    </div>
-                    <span className="text-xs text-slate-500 mt-2">URL de la foto (Temporal)</span>
-                    <input 
-                      type="text" 
-                      value={editForm.photoURL}
-                      onChange={(e) => setEditForm({...editForm, photoURL: e.target.value})}
-                      className="w-full mt-2 bg-slate-950/50 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-300 focus:border-cyan-500 outline-none"
-                    />
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          
+                          // Subida directa a Cloudinary (requiere NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME y un upload preset)
+                          const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+                          if (!cloudName) {
+                            alert("Configura NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME en tu panel de Cloudflare.");
+                            return;
+                          }
+                          
+                          setIsSaving(true);
+                          const formData = new FormData();
+                          formData.append("file", file);
+                          formData.append("upload_preset", "omnihub_preset"); // Asegúrate de crear este preset en Cloudinary como 'unsigned'
+                          
+                          try {
+                            const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+                              method: "POST",
+                              body: formData
+                            });
+                            const data = await res.json();
+                            if (data.secure_url) {
+                              setEditForm({...editForm, photoURL: data.secure_url});
+                            } else {
+                              alert("Error al subir a Cloudinary. Revisa tu upload preset.");
+                            }
+                          } catch (err) {
+                            console.error(err);
+                            alert("Error de conexión al subir la imagen.");
+                          } finally {
+                            setIsSaving(false);
+                          }
+                        }}
+                      />
+                    </label>
+                    <span className="text-xs text-slate-500 mt-3 text-center px-4">Toca la imagen para subir una nueva (Vía Cloudinary)</span>
                   </div>
 
                   <div>
