@@ -5,6 +5,8 @@ import WaterBackground from "@/components/WaterBackground";
 
 const inter = Inter({ subsets: ["latin"] });
 
+import { AuthProvider } from "@/context/AuthContext";
+
 export const metadata: Metadata = {
   title: "Omnihub - Explore the Deep",
   description: "A premium community platform for sharing and discovering.",
@@ -18,10 +20,12 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.className} bg-[#010A15] text-white antialiased min-h-screen selection:bg-cyan-500/30 selection:text-cyan-50`}>
-        <WaterBackground />
-        <main className="relative z-10 flex min-h-screen flex-col">
-          {children}
-        </main>
+        <AuthProvider>
+          <WaterBackground />
+          <main className="relative z-10 flex min-h-screen flex-col">
+            {children}
+          </main>
+        </AuthProvider>
       </body>
     </html>
   );
