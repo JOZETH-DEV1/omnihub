@@ -39,32 +39,61 @@ export default function UploadPage() {
     }
 
     setIsPublishing(true);
+    let finalFileUrl = "";
 
     try {
-      // 1. Subir a Cloudinary
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      formData.append("upload_preset", "omnihub_preset");
+      // Si es imagen, usamos Cloudinary
+      if (fileMode === "image") {
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        formData.append("upload_preset", "omnihub_preset");
+        
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+          method: "POST",
+          body: formData
+        });
+        
+        const data = await res.json();
+        if (!data.secure_url) throw new Error(data.error?.message || "Error al subir imagen.");
+        finalFileUrl = data.secure_url;
+      } 
+      // Si es archivo pesado, usamos Google Drive a través del Worker
+      else {
+        const workerUrl = process.env.NEXT_PUBLIC_WORKER_URL || "https://omnihub-worker.tu-usuario.workers.dev";
+        
+        // 1. Pedirle permiso (Access Token) al Worker
+        const tokenRes = await fetch(`${workerUrl}/api/secure/drive-token`);
+        if (!tokenRes.ok) throw new Error("No se pudo obtener el token de Google Drive del Worker. Verifica que el Worker esté desplegado y configurado.");
+        const { token, folderId } = await tokenRes.json();
+        
+        // 2. Subir directamente a Google Drive desde el navegador (bypasseando límites)
+        const metadata = {
+          name: selectedFile.name,
+          parents: [folderId || "root"], // Usa el folderId configurado en el worker
+        };
 
-      // Para archivos pesados (ZIP/APK) Cloudinary requiere resource_type: raw
-      const resourceType = fileMode === "image" ? "image" : "raw";
-      
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, {
-        method: "POST",
-        body: formData
-      });
-      
-      const data = await res.json();
-      
-      if (!data.secure_url) {
-        throw new Error(data.error?.message || "Error al subir el archivo.");
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+        form.append('file', selectedFile);
+
+        const driveRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: form
+        });
+
+        const driveData = await driveRes.json();
+        if (!driveData.webViewLink) throw new Error("Error al subir a Google Drive: " + JSON.stringify(driveData));
+        finalFileUrl = driveData.webViewLink; // Guardamos el link de Google Drive
       }
 
       // 2. Guardar en Firestore
       await addDoc(collection(db, "posts"), {
         title,
         description,
-        fileUrl: data.secure_url,
+        fileUrl: finalFileUrl,
         fileType: fileMode,
         authorId: user.uid,
         authorUsername: userProfile.username,
