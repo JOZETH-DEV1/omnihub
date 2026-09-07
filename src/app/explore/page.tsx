@@ -89,22 +89,27 @@ export default function ExplorePage() {
 }
 
 function PostCard({ index }: { index: number }) {
-  const images = [
-    "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop"
+  // Generar gradientes dinámicos en base al index para diferenciarlos visualmente
+  const gradients = [
+    "from-blue-600 to-cyan-400",
+    "from-purple-600 to-blue-500",
+    "from-emerald-500 to-teal-400",
+    "from-rose-500 to-orange-400",
+    "from-indigo-600 to-purple-500",
+    "from-cyan-700 to-blue-800"
   ];
-  const image = images[index % 3];
+  const bgGradient = gradients[index % gradients.length];
 
   return (
-    <div className="group relative rounded-2xl bg-slate-900/40 border border-slate-700/50 overflow-hidden backdrop-blur-md hover:border-cyan-500/50 transition-all duration-500 hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] hover:-translate-y-1">
-      <div className="relative aspect-video overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent z-10 opacity-60"></div>
-        <img 
-          src={image} 
-          alt="Post thumbnail" 
-          className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 ease-out"
-        />
+    <div className="group relative rounded-2xl bg-slate-900/40 border border-slate-700/50 overflow-hidden backdrop-blur-md hover:border-cyan-500/50 transition-all duration-500 hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] hover:-translate-y-1 cursor-pointer">
+      <div className={`relative aspect-video overflow-hidden bg-gradient-to-br ${bgGradient} flex items-center justify-center`}>
+        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors duration-500"></div>
+        {/* Ícono central minimalista en lugar de imagen de Unsplash */}
+        <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-xl transform group-hover:scale-110 transition-transform duration-500">
+          <svg className="w-8 h-8 text-white opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+        </div>
       </div>
       
       <div className="p-5 relative z-20">
@@ -118,7 +123,7 @@ function PostCard({ index }: { index: number }) {
             <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500"></div>
             <span className="text-xs font-medium text-slate-300">@usuario_pro</span>
           </div>
-          <span className="text-xs text-cyan-400 bg-cyan-950/50 px-2 py-1 rounded-md font-semibold">Descargar</span>
+          <span className="text-xs text-cyan-400 bg-cyan-950/50 px-2 py-1 rounded-md font-semibold border border-cyan-800/50">Descargar</span>
         </div>
       </div>
     </div>

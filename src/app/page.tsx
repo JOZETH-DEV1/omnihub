@@ -59,34 +59,28 @@ export default function Home() {
 }
 
 function PostCard({ index }: { index: number }) {
-  const images = [
-    "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop"
+  const gradients = [
+    "from-blue-600 to-cyan-400",
+    "from-purple-600 to-blue-500",
+    "from-emerald-500 to-teal-400"
   ];
-  const image = images[index % 3];
+  const bgGradient = gradients[index % gradients.length];
 
   return (
-    <div className="group relative rounded-2xl bg-slate-900/40 border border-slate-700/50 overflow-hidden backdrop-blur-md hover:border-cyan-500/50 transition-all duration-500 hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] hover:-translate-y-1">
-      <div className="relative aspect-video overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent z-10 opacity-60"></div>
-        <img 
-          src={image} 
-          alt="Post thumbnail" 
-          className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 ease-out"
-        />
-        <div className="absolute bottom-3 left-3 right-3 z-20 flex justify-between items-end">
-          <div className="flex gap-2">
-            <span className="px-2 py-1 rounded bg-black/50 backdrop-blur-sm border border-white/10 text-xs font-medium text-cyan-300">App</span>
-            <span className="px-2 py-1 rounded bg-black/50 backdrop-blur-sm border border-white/10 text-xs font-medium text-slate-300">New</span>
-          </div>
+    <div className="group relative rounded-2xl bg-slate-900/40 border border-slate-700/50 overflow-hidden backdrop-blur-md hover:border-cyan-500/50 transition-all duration-500 hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] hover:-translate-y-1 cursor-pointer">
+      <div className={`relative aspect-video overflow-hidden bg-gradient-to-br ${bgGradient} flex items-center justify-center`}>
+        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors duration-500"></div>
+        <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-xl transform group-hover:scale-110 transition-transform duration-500">
+          <svg className="w-8 h-8 text-white opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
         </div>
       </div>
       
       <div className="p-5 relative z-20">
-        <h3 className="text-lg font-bold text-slate-100 mb-2 group-hover:text-cyan-400 transition-colors">Amazing Digital Asset {index}</h3>
+        <h3 className="text-lg font-bold text-slate-100 mb-2 group-hover:text-cyan-400 transition-colors">Digital Drop {index}</h3>
         <p className="text-sm text-slate-400 line-clamp-2 mb-4">
-          Download the latest files and tools for your workflow. Experience seamless integration and premium quality.
+          Una increíble aportación a la plataforma de Omnihub.
         </p>
         
         <div className="flex items-center justify-between pt-4 border-t border-slate-800">
