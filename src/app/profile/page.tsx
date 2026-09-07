@@ -150,21 +150,22 @@ export default function ProfilePage() {
                 initial={{ scale: 0.9, y: 20 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
-                className="bg-slate-900 border border-slate-700 w-full max-w-lg rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)]"
+                className="bg-slate-900 border border-slate-700 w-full max-w-lg rounded-3xl flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.5)] max-h-[90vh]"
               >
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-slate-800">
+                <div className="flex items-center justify-between p-4 md:p-6 border-b border-slate-800 shrink-0">
                   <h2 className="text-xl font-bold text-white">Modificar Perfil</h2>
                   <button 
                     onClick={() => setIsEditing(false)}
-                    className="p-2 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                    className="p-2 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors bg-slate-800/50 md:bg-transparent"
+                    title="Cerrar"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="w-6 h-6" />
                   </button>
                 </div>
 
                 {/* Body */}
-                <div className="p-6 space-y-5">
+                <div className="p-4 md:p-6 space-y-5 overflow-y-auto flex-1">
                   <div className="flex flex-col items-center mb-6">
                     <label className="relative group cursor-pointer">
                       <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-slate-600 bg-slate-800 group-hover:border-cyan-500 transition-colors">

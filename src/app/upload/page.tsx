@@ -34,6 +34,7 @@ export default function UploadPage() {
           {/* Toggles de tipo de archivo */}
           <div className="flex gap-4 mb-8 bg-slate-950 p-2 rounded-2xl">
             <button 
+              type="button"
               onClick={() => setFileMode("file")}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all ${
                 fileMode === "file" 
@@ -42,9 +43,10 @@ export default function UploadPage() {
               }`}
             >
               <File className="w-5 h-5" />
-              Archivo Pesado (.zip, .apk, .mcpack)
+              Archivo Pesado (.zip, .apk)
             </button>
             <button 
+              type="button"
               onClick={() => setFileMode("image")}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all ${
                 fileMode === "image" 
@@ -63,7 +65,7 @@ export default function UploadPage() {
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Título de la publicación</label>
               <input 
                 type="text" 
-                placeholder="Ej. Increíble mod de texturas"
+                placeholder={fileMode === "file" ? "Ej. Increíble mod de texturas" : "Ej. Captura de pantalla épica"}
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all"
               />
             </div>

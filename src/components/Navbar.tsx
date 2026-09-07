@@ -45,11 +45,11 @@ export default function Navbar() {
             )}
 
             {user ? (
-              <div className="hidden md:flex items-center gap-3">
-                <Link href="/profile" className="w-10 h-10 rounded-full overflow-hidden border border-cyan-500/50 hover:border-cyan-400 transition-colors shadow-[0_0_10px_rgba(34,211,238,0.2)]">
+              <div className="flex items-center gap-2 md:gap-3">
+                <Link href="/profile" className="w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden border border-cyan-500/50 hover:border-cyan-400 transition-colors shadow-[0_0_10px_rgba(34,211,238,0.2)]">
                   <img src={userProfile?.photoURL || user.photoURL || ""} alt="Avatar" className="w-full h-full object-cover" />
                 </Link>
-                <button onClick={logOut} className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-800/50 border border-slate-700 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 transition-colors text-slate-400">
+                <button onClick={logOut} className="hidden md:flex w-10 h-10 rounded-full items-center justify-center bg-slate-800/50 border border-slate-700 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 transition-colors text-slate-400">
                   <LogOut className="w-4 h-4" />
                 </button>
               </div>
