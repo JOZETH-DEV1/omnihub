@@ -4,19 +4,8 @@
  * without exposing private keys to the client.
  */
 
-export interface Env {
-  // Secrets
-  GOOGLE_DRIVE_CLIENT_SECRET: string;
-  GOOGLE_DRIVE_REFRESH_TOKEN: string;
-  CLOUDINARY_API_SECRET: string;
-  
-  // Public Vars
-  GOOGLE_DRIVE_CLIENT_ID: string;
-  GOOGLE_DRIVE_FOLDER_ID: string;
-}
-
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     
     // CORS Preflight
@@ -39,7 +28,7 @@ export default {
         status: 404,
         headers: getCorsHeaders()
       });
-    } catch (error: any) {
+    } catch (error) {
       return new Response(JSON.stringify({ error: error.message || "Internal Server Error" }), { 
         status: 500,
         headers: getCorsHeaders()
@@ -48,7 +37,7 @@ export default {
   },
 };
 
-function handleOptions(request: Request) {
+function handleOptions(request) {
   return new Response(null, {
     headers: getCorsHeaders()
   });
@@ -56,14 +45,14 @@ function handleOptions(request: Request) {
 
 function getCorsHeaders() {
   return {
-    "Access-Control-Allow-Origin": "*", // Or specific domain
+    "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Content-Type": "application/json"
   };
 }
 
-async function handleCloudinarySignature(request: Request, env: Env): Promise<Response> {
+async function handleCloudinarySignature(request, env) {
   // Logic to generate secure hash based on CLOUDINARY_API_SECRET
   // ...
   return new Response(JSON.stringify({ signature: "mock-signature", timestamp: Date.now() }), {
@@ -71,7 +60,7 @@ async function handleCloudinarySignature(request: Request, env: Env): Promise<Re
   });
 }
 
-async function handleDriveUpload(request: Request, env: Env): Promise<Response> {
+async function handleDriveUpload(request, env) {
   // 1. Authenticate with Google Drive using refresh token
   // 2. Obtain access token securely
   // 3. (Optionally) proxy upload or return signed URL

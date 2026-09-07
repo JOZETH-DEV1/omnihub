@@ -1,5 +1,5 @@
 name = "omnihub-worker"
-main = "worker/index.ts"
+main = "index.js"
 compatibility_date = "2023-12-01"
 
 [vars]
