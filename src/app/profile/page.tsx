@@ -12,7 +12,7 @@ import { doc, updateDoc, collection, query, where, getDocs, deleteDoc } from "fi
 import Link from "next/link";
 
 export default function ProfilePage() {
-  const { user, userProfile, loading, logout } = useAuth();
+  const { user, userProfile, loading, logOut } = useAuth();
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -154,7 +154,7 @@ export default function ProfilePage() {
                     Editar Perfil
                   </button>
                   <button 
-                    onClick={() => logout()}
+                    onClick={() => logOut()}
                     className="p-2 bg-red-900/20 hover:bg-red-900/40 text-red-400 rounded-full transition-colors"
                     title="Cerrar Sesión"
                   >
