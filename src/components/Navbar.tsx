@@ -27,10 +27,10 @@ export default function Navbar() {
                 Explorar
               </Link>
               
-              {user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && (
+              {userProfile?.role && ["owner", "mod"].includes(userProfile.role) && (
                 <Link href="/admin" className="flex items-center gap-2 text-red-400 hover:text-red-300 font-bold transition-colors">
                   <ShieldCheck className="w-5 h-5" />
-                  Admin
+                  Owner Panel
                 </Link>
               )}
             </nav>

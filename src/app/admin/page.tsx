@@ -9,13 +9,14 @@ import { collection, getDocs, deleteDoc, doc, query, orderBy } from "firebase/fi
 import { Trash2, ShieldAlert, FileWarning, Search, ShieldCheck } from "lucide-react";
 
 export default function AdminPanel() {
-  const { user, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const router = useRouter();
   const [allPosts, setAllPosts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+  const role = userProfile?.role || "user";
+  const isAuthorized = role === "owner" || role === "mod";
 
   useEffect(() => {
     if (!loading && !user) {
@@ -24,19 +25,20 @@ export default function AdminPanel() {
   }, [user, loading, router]);
 
   useEffect(() => {
-    if (user && adminEmail && user.email === adminEmail) {
-      fetchAllPosts();
-    } else if (user && user.email && adminEmail && user.email !== adminEmail) {
-      // Si está logueado pero no es admin, sacarlo de aquí
-      router.push("/explore");
+    if (!loading && userProfile) {
+      if (isAuthorized) {
+        fetchAllPosts();
+      } else {
+        router.push("/explore");
+      }
     }
-  }, [user, adminEmail, router]);
+  }, [userProfile, loading, isAuthorized, router]);
 
   const fetchAllPosts = async () => {
     try {
       const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
       const querySnapshot = await getDocs(q);
-      setAllPosts(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setAllPosts(querySnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
       console.error("Error fetching posts:", error);
     } finally {
@@ -44,7 +46,15 @@ export default function AdminPanel() {
     }
   };
 
-  const handleDeletePost = async (postId: string, fileUrl: string, thumbnailUrl: string) => {
+  const handleDeletePost = async (postId: string, fileUrl: string, thumbnailUrl: string, authorRole: string) => {
+    // Si es mod, no puede borrar cosas de owners ni de otros mods
+    if (role === "mod") {
+      if (authorRole === "owner" || authorRole === "mod") {
+        alert("⚠️ Permiso Denegado: Como moderador, no puedes eliminar publicaciones de otros moderadores o del dueño.");
+        return;
+      }
+    }
+
     if (!confirm("⚠️ ACCIÓN DE ADMIN: ¿Estás seguro de que quieres erradicar esta publicación de la base de datos y destruir los archivos en la nube?")) return;
     
     try {
@@ -59,7 +69,7 @@ export default function AdminPanel() {
         body: JSON.stringify({ 
           driveUrl: fileUrl, 
           cloudinaryUrl: thumbnailUrl || (fileUrl?.includes('res.cloudinary') ? fileUrl : null),
-          adminEmail: user?.email // Pasamos el correo para que el worker (en un futuro) también lo valide
+          adminEmail: user?.email // Pasamos el correo para que el worker también lo valide
         })
       }).catch(e => console.error("Error en Worker Admin:", e));
       
@@ -71,8 +81,9 @@ export default function AdminPanel() {
     }
   };
 
-  if (loading || !user) return null;
-  if (user.email !== adminEmail) {
+  if (loading || !user || !userProfile) return null;
+  
+  if (!isAuthorized) {
     return (
       <div className="h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
         <ShieldAlert className="w-20 h-20 text-red-500 mb-4 animate-pulse" />
@@ -95,9 +106,11 @@ export default function AdminPanel() {
           <div>
             <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500 mb-2 flex items-center gap-3">
               <ShieldCheck className="w-10 h-10 text-red-500" />
-              Panel de Control (Admin)
+              Panel de Control (Owner)
             </h1>
-            <p className="text-red-400/80 font-medium">Conectado como Supremo: {user.email}</p>
+            <p className="text-red-400/80 font-medium">
+              Conectado como {role === 'owner' ? 'Supremo (Owner)' : 'Moderador'}: {user.email}
+            </p>
           </div>
           
           <div className="relative w-full md:w-96">
@@ -119,7 +132,7 @@ export default function AdminPanel() {
                 <tr className="bg-slate-800/50 border-b border-slate-700">
                   <th className="p-4 text-sm font-semibold text-slate-400 uppercase tracking-wider">Publicación</th>
                   <th className="p-4 text-sm font-semibold text-slate-400 uppercase tracking-wider">Autor</th>
-                  <th className="p-4 text-sm font-semibold text-slate-400 uppercase tracking-wider">Tipo</th>
+                  <th className="p-4 text-sm font-semibold text-slate-400 uppercase tracking-wider">Rol de Autor</th>
                   <th className="p-4 text-sm font-semibold text-slate-400 uppercase tracking-wider text-right">Acciones</th>
                 </tr>
               </thead>
@@ -153,13 +166,13 @@ export default function AdminPanel() {
                         <p className="text-slate-500 text-xs truncate max-w-[150px]">{post.authorId}</p>
                       </td>
                       <td className="p-4">
-                        <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase ${post.fileType === 'image' ? 'bg-purple-900/30 text-purple-400 border border-purple-800' : 'bg-orange-900/30 text-orange-400 border border-orange-800'}`}>
-                          {post.fileType}
+                        <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase ${post.authorRole === 'owner' ? 'bg-red-900/30 text-red-400 border border-red-800' : post.authorRole === 'mod' ? 'bg-orange-900/30 text-orange-400 border border-orange-800' : 'bg-slate-800 text-slate-400 border border-slate-700'}`}>
+                          {post.authorRole || 'user'}
                         </span>
                       </td>
                       <td className="p-4 text-right">
                         <button 
-                          onClick={() => handleDeletePost(post.id, post.fileUrl, post.thumbnailUrl)}
+                          onClick={() => handleDeletePost(post.id, post.fileUrl, post.thumbnailUrl, post.authorRole || 'user')}
                           className="inline-flex items-center gap-2 px-4 py-2 bg-red-900/20 hover:bg-red-500 text-red-400 hover:text-white rounded-lg transition-colors border border-red-900/50 hover:border-red-500 font-medium text-sm"
                         >
                           <Trash2 className="w-4 h-4" />

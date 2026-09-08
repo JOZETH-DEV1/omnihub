@@ -21,6 +21,7 @@ export interface UserProfile {
   isVerified: boolean;
   followersCount: number;
   followingCount: number;
+  role?: "owner" | "mod" | "user";
 }
 
 // ------------------------------

@@ -19,7 +19,7 @@ export default function ExplorePage() {
       try {
         const q = query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(20));
         const querySnapshot = await getDocs(q);
-        const postsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const postsData = querySnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
         setPosts(postsData);
       } catch (error) {
         console.error("Error loading posts:", error);

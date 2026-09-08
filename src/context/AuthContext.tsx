@@ -22,7 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser: any) => {
       setUser(currentUser);
       
       if (currentUser) {
@@ -31,17 +31,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const docSnap = await getDoc(userRef);
         
         if (docSnap.exists()) {
-          setUserProfile(docSnap.data() as UserProfile);
+          let profileData = docSnap.data() as UserProfile;
+          
+          // Auto-upgrade a Owner si coincide con el .env
+          if (currentUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && profileData.role !== "owner") {
+            profileData.role = "owner";
+            await setDoc(userRef, { role: "owner" }, { merge: true });
+          }
+          
+          setUserProfile(profileData);
         } else {
+          const isOwner = currentUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
           const newProfile: UserProfile = {
             uid: currentUser.uid,
             displayName: currentUser.displayName || "Usuario Nuevo",
             username: `user_${currentUser.uid.substring(0, 6)}`,
             photoURL: currentUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.uid}`,
             bio: "Explorando las profundidades de Omnihub.",
-            isVerified: false,
+            isVerified: isOwner,
             followersCount: 0,
-            followingCount: 0
+            followingCount: 0,
+            role: isOwner ? "owner" : "user"
           };
           await setDoc(userRef, {
             ...newProfile,

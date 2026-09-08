@@ -128,6 +128,7 @@ export default function UploadPage() {
         authorId: user.uid,
         authorUsername: userProfile.username,
         authorPhoto: userProfile.photoURL,
+        authorRole: userProfile.role || "user",
         isVerified: user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL, // Marca como verificado si es el admin
         likesCount: 0,
         commentsCount: 0,

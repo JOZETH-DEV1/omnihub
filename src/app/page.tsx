@@ -17,7 +17,7 @@ export default function Home() {
       try {
         const q = query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(6));
         const querySnapshot = await getDocs(q);
-        const postsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const postsData = querySnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
         setRecentPosts(postsData);
       } catch (error) {
         console.error("Error loading posts:", error);

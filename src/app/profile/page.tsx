@@ -52,7 +52,7 @@ export default function ProfilePage() {
     try {
       const q = query(collection(db, "posts"), where("authorId", "==", user.uid));
       const querySnapshot = await getDocs(q);
-      const posts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const posts = querySnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
       setUserPosts(posts);
     } catch (error) {
       console.error("Error fetching user posts:", error);
