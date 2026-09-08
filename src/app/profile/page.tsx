@@ -3,24 +3,31 @@
 import { useAuth } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
 import VerificationBadge from "@/components/VerificationBadge";
-import { Settings, Image as ImageIcon, X, Save, Camera } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Camera, Settings, X, Save, Edit3, LogOut, CheckCircle, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { updateUserProfile } from "@/lib/db";
+import { db } from "@/lib/firebase";
+import { doc, updateDoc, collection, query, where, getDocs, deleteDoc } from "firebase/firestore";
+import Link from "next/link";
 
 export default function ProfilePage() {
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, loading, logout } = useAuth();
   const router = useRouter();
-  
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Real stats
+  const [userPosts, setUserPosts] = useState<any[]>([]);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+
+  // Estados del formulario
   const [editForm, setEditForm] = useState({
     displayName: "",
     username: "",
     bio: "",
     photoURL: ""
   });
-  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -31,110 +38,191 @@ export default function ProfilePage() {
   useEffect(() => {
     if (userProfile) {
       setEditForm({
-        displayName: userProfile.displayName,
-        username: userProfile.username,
+        displayName: userProfile.displayName || "",
+        username: userProfile.username || "",
         bio: userProfile.bio || "",
-        photoURL: userProfile.photoURL
+        photoURL: userProfile.photoURL || ""
       });
+      fetchUserPosts();
     }
-  }, [userProfile]);
+  }, [userProfile, user]);
+
+  const fetchUserPosts = async () => {
+    if (!user) return;
+    try {
+      const q = query(collection(db, "posts"), where("authorId", "==", user.uid));
+      const querySnapshot = await getDocs(q);
+      const posts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setUserPosts(posts);
+    } catch (error) {
+      console.error("Error fetching user posts:", error);
+    } finally {
+      setIsLoadingPosts(false);
+    }
+  };
+
+  const handleDeletePost = async (postId: string, fileUrl: string, thumbnailUrl: string) => {
+    if (!confirm("¿Estás seguro de que quieres eliminar esta publicación? Esto borrará también los archivos de la nube.")) return;
+    
+    try {
+      // 1. Borrar documento de Firebase
+      await deleteDoc(doc(db, "posts", postId));
+      
+      // 2. Borrar archivos usando el Worker
+      const workerUrl = process.env.NEXT_PUBLIC_WORKER_URL || "https://tiny-pond-a740.jozethperez5.workers.dev";
+      fetch(`${workerUrl}/api/secure/delete-files`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          driveUrl: fileUrl, 
+          cloudinaryUrl: thumbnailUrl || (fileUrl?.includes('res.cloudinary') ? fileUrl : null) 
+        })
+      }).catch(e => console.error("Error en limpieza de archivos:", e));
+      
+      // Actualizar UI
+      setUserPosts(prev => prev.filter(p => p.id !== postId));
+    } catch (error) {
+      alert("Error al eliminar la publicación.");
+      console.error(error);
+    }
+  };
 
   const handleSaveProfile = async () => {
     if (!user) return;
     setIsSaving(true);
+    
     try {
-      await updateUserProfile(user.uid, editForm);
-      // Actualización visual instantánea sin recargar la página (optimistic UI)
-      if (userProfile) {
-        userProfile.displayName = editForm.displayName;
-        userProfile.username = editForm.username;
-        userProfile.bio = editForm.bio;
-        userProfile.photoURL = editForm.photoURL;
-      }
+      await updateDoc(doc(db, "users", user.uid), {
+        displayName: editForm.displayName,
+        username: editForm.username,
+        bio: editForm.bio,
+        photoURL: editForm.photoURL,
+        updatedAt: new Date()
+      });
       setIsEditing(false);
+      window.location.reload();
     } catch (error) {
-      console.error("Error updating profile:", error);
-      alert("Hubo un error al guardar el perfil.");
+      alert("Error al guardar perfil");
     } finally {
       setIsSaving(false);
     }
   };
 
-  if (loading || !user || !userProfile) {
-    return (
-      <>
-        <Navbar />
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      </>
-    );
-  }
+  if (loading || !user || !userProfile) return null;
 
   return (
     <>
       <Navbar />
-      <div className="container mx-auto px-4 pt-10 pb-20 max-w-4xl relative">
-        {/* Profile Header */}
-        <div className="relative rounded-3xl overflow-hidden bg-slate-900/60 border border-slate-700/50 backdrop-blur-md mb-8">
-          {/* Banner */}
-          <div className="h-48 bg-gradient-to-r from-cyan-900/40 via-blue-900/40 to-purple-900/40 relative">
-            <button className="absolute top-4 right-4 p-2 bg-black/40 backdrop-blur-md rounded-full hover:bg-black/60 transition-colors">
-              <ImageIcon className="w-4 h-4 text-white" />
-            </button>
-          </div>
+      <div className="container mx-auto px-4 pt-8 pb-24 max-w-4xl">
+        
+        {/* Profile Header Card */}
+        <div className="bg-slate-900/60 border border-slate-700/50 backdrop-blur-xl rounded-3xl p-6 md:p-10 shadow-[0_0_40px_rgba(0,0,0,0.4)] relative overflow-hidden mb-8">
+          <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-cyan-900/40 to-blue-900/40 opacity-50"></div>
           
-          {/* Avatar & Info */}
-          <div className="px-8 pb-8 relative">
-            <div className="flex justify-between items-end -mt-16 mb-4">
-              <div className="relative">
-                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-[#010A15] bg-slate-800 relative z-10 shadow-[0_0_20px_rgba(34,211,238,0.2)]">
-                  <img src={userProfile.photoURL} alt="Profile" className="w-full h-full object-cover" />
+          <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-8">
+            {/* Avatar & Badge */}
+            <div className="relative">
+              <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-slate-800 bg-slate-900 overflow-hidden shadow-2xl relative z-10">
+                <img 
+                  src={userProfile.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="absolute -bottom-4 -right-4 z-20">
+                <VerificationBadge />
+              </div>
+            </div>
+
+            {/* User Info */}
+            <div className="flex-1 text-center md:text-left">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
+                <div>
+                  <h1 className="text-3xl font-extrabold text-white mb-1 flex items-center justify-center md:justify-start gap-2">
+                    {userProfile.displayName || "Usuario"}
+                    <CheckCircle className="w-5 h-5 text-cyan-400" />
+                  </h1>
+                  <p className="text-cyan-400 font-medium">@{userProfile.username}</p>
                 </div>
-                {/* 3D Verification Badge placed right on the avatar */}
-                {userProfile.isVerified && (
-                  <div className="absolute bottom-1 right-1 z-20">
-                    <VerificationBadge size="lg" />
-                  </div>
-                )}
+                
+                <div className="flex items-center justify-center gap-3">
+                  <button 
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center gap-2 px-5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-full font-medium transition-colors"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                    Editar Perfil
+                  </button>
+                  <button 
+                    onClick={() => logout()}
+                    className="p-2 bg-red-900/20 hover:bg-red-900/40 text-red-400 rounded-full transition-colors"
+                    title="Cerrar Sesión"
+                  >
+                    <LogOut className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
               
-              <button 
-                onClick={() => setIsEditing(true)}
-                className="px-6 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-full font-medium text-sm transition-colors flex items-center gap-2 shadow-lg hover:shadow-cyan-500/20"
-              >
-                <Settings className="w-4 h-4" />
-                Editar Perfil
-              </button>
-            </div>
-            
-            <div>
-              <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-                {userProfile.displayName}
-                {userProfile.isVerified && <VerificationBadge size="sm" />}
-              </h1>
-              <p className="text-cyan-400 font-medium mb-4">@{userProfile.username}</p>
-              
-              <p className="text-slate-300 max-w-2xl leading-relaxed mb-6">
-                {userProfile.bio}
+              <p className="text-slate-400 mt-4 max-w-lg leading-relaxed">
+                {userProfile.bio || "Este usuario aún no ha escrito una biografía. ¡Seguro es una persona genial!"}
               </p>
-              
-              <div className="flex gap-6 border-t border-slate-800 pt-6">
+
+              {/* Stats */}
+              <div className="flex items-center justify-center md:justify-start gap-8 mt-6 pt-6 border-t border-slate-800/50">
                 <div className="flex flex-col">
-                  <span className="text-2xl font-bold text-white">{userProfile.followersCount}</span>
-                  <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Seguidores</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-2xl font-bold text-white">{userProfile.followingCount}</span>
-                  <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Siguiendo</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-2xl font-bold text-white">0</span>
+                  <span className="text-2xl font-bold text-white">{isLoadingPosts ? "-" : userPosts.length}</span>
                   <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Aportes</span>
                 </div>
+                <div className="flex flex-col">
+                  <span className="text-2xl font-bold text-white">{userProfile.followersCount || 0}</span>
+                  <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Seguidores</span>
+                </div>
               </div>
             </div>
           </div>
+        </div>
+
+        {/* User Posts List */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-white mb-6">Tus Aportes</h2>
+          {isLoadingPosts ? (
+            <p className="text-slate-500">Cargando publicaciones...</p>
+          ) : userPosts.length === 0 ? (
+            <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-10 text-center">
+              <p className="text-slate-400 mb-4">Aún no has publicado nada.</p>
+              <Link href="/upload" className="text-cyan-400 hover:text-cyan-300 font-medium">
+                ¡Haz tu primera subida!
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {userPosts.map(post => (
+                <div key={post.id} className="bg-slate-900/60 border border-slate-700/50 rounded-xl p-4 flex gap-4 items-center">
+                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-slate-800 shrink-0">
+                    {(post.thumbnailUrl || (post.fileType === 'image' && post.fileUrl)) ? (
+                      <img src={post.thumbnailUrl || post.fileUrl} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <span className="text-slate-500 text-xs">Archivo</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-white truncate">{post.title}</h3>
+                    <p className="text-xs text-slate-400 truncate">{post.description}</p>
+                    <div className="text-xs text-cyan-400 mt-1 capitalize">{post.fileType}</div>
+                  </div>
+                  <button 
+                    onClick={() => handleDeletePost(post.id, post.fileUrl, post.thumbnailUrl)}
+                    className="p-3 text-slate-500 hover:text-red-400 hover:bg-red-900/20 rounded-xl transition-all"
+                    title="Eliminar publicación"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Edit Profile Modal */}
@@ -182,7 +270,6 @@ export default function ProfilePage() {
                           const file = e.target.files?.[0];
                           if (!file) return;
                           
-                          // Subida directa a Cloudinary (requiere NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME y un upload preset)
                           const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
                           if (!cloudName) {
                             alert("Configura NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME en tu panel de Cloudflare.");
@@ -192,7 +279,7 @@ export default function ProfilePage() {
                           setIsSaving(true);
                           const formData = new FormData();
                           formData.append("file", file);
-                          formData.append("upload_preset", "omnihub_preset"); // Asegúrate de crear este preset en Cloudinary como 'unsigned'
+                          formData.append("upload_preset", "omnihub_preset"); 
                           
                           try {
                             const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {

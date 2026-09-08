@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { User, UploadCloud, Search, Menu, LogOut, X } from "lucide-react";
+import { Menu, LogOut, Settings, User as UserIcon, X, Search, Compass, PlusCircle, ShieldCheck, UploadCloud } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
 
@@ -21,9 +21,18 @@ export default function Navbar() {
               <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-blue-400 tracking-tight">Omnihub</span>
             </Link>
             
-            <nav className="hidden md:flex gap-1">
-              <Link href="/explore" className="px-4 py-2 rounded-full text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors">Explore</Link>
-              <Link href="/categories" className="px-4 py-2 rounded-full text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors">Categories</Link>
+            <nav className="hidden md:flex gap-4 items-center">
+              <Link href="/explore" className="flex items-center gap-2 text-slate-300 hover:text-white font-medium transition-colors">
+                <Compass className="w-5 h-5" />
+                Explorar
+              </Link>
+              
+              {user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && (
+                <Link href="/admin" className="flex items-center gap-2 text-red-400 hover:text-red-300 font-bold transition-colors">
+                  <ShieldCheck className="w-5 h-5" />
+                  Admin
+                </Link>
+              )}
             </nav>
           </div>
 
