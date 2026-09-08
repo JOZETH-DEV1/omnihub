@@ -16,6 +16,7 @@ export default function UploadPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
 
   useEffect(() => {
@@ -40,6 +41,7 @@ export default function UploadPage() {
 
     setIsPublishing(true);
     let finalFileUrl = "";
+    let finalThumbnailUrl = null;
 
     try {
       // Si es imagen, usamos Cloudinary
@@ -57,8 +59,24 @@ export default function UploadPage() {
         if (!data.secure_url) throw new Error(data.error?.message || "Error al subir imagen.");
         finalFileUrl = data.secure_url;
       } 
-      // Si es archivo pesado, usamos Google Drive a través del Worker
+      // Si es archivo pesado, usamos Google Drive a través del Worker y subimos la miniatura a Cloudinary
       else {
+        // Primero subir la miniatura (si existe)
+        if (thumbnailFile) {
+          const formData = new FormData();
+          formData.append("file", thumbnailFile);
+          formData.append("upload_preset", "omnihub_preset");
+          
+          const thumbRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+            method: "POST",
+            body: formData
+          });
+          const thumbData = await thumbRes.json();
+          if (thumbData.secure_url) {
+            finalThumbnailUrl = thumbData.secure_url;
+          }
+        }
+
         const workerUrl = process.env.NEXT_PUBLIC_WORKER_URL || "https://tiny-pond-a740.jozethperez5.workers.dev";
         
         // 1. Pedirle permiso (Access Token) al Worker
@@ -105,6 +123,7 @@ export default function UploadPage() {
         title,
         description,
         fileUrl: finalFileUrl,
+        thumbnailUrl: finalThumbnailUrl, // Guardamos la URL de la miniatura si existe
         fileType: fileMode,
         authorId: user.uid,
         authorUsername: userProfile.username,
@@ -143,7 +162,7 @@ export default function UploadPage() {
           <div className="flex gap-4 mb-8 bg-slate-950 p-2 rounded-2xl">
             <button 
               type="button"
-              onClick={() => { setFileMode("file"); setSelectedFile(null); }}
+              onClick={() => { setFileMode("file"); setSelectedFile(null); setThumbnailFile(null); }}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all ${
                 fileMode === "file" 
                   ? "bg-cyan-600 text-white shadow-lg" 
@@ -155,7 +174,7 @@ export default function UploadPage() {
             </button>
             <button 
               type="button"
-              onClick={() => { setFileMode("image"); setSelectedFile(null); }}
+              onClick={() => { setFileMode("image"); setSelectedFile(null); setThumbnailFile(null); }}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all ${
                 fileMode === "image" 
                   ? "bg-cyan-600 text-white shadow-lg" 
@@ -192,6 +211,36 @@ export default function UploadPage() {
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all resize-none"
               ></textarea>
             </div>
+
+            {/* Zona de Input de Miniatura (Solo si es archivo pesado) */}
+            {fileMode === "file" && (
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Miniatura (Opcional pero recomendada)</label>
+                <label className="border border-slate-700 bg-slate-950 rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:border-cyan-500 transition-all">
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    className="hidden" 
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        setThumbnailFile(e.target.files[0]);
+                      }
+                    }}
+                  />
+                  <div className="w-12 h-12 bg-slate-900 rounded-lg flex items-center justify-center shrink-0">
+                    {thumbnailFile ? <CheckCircle className="w-6 h-6 text-green-400" /> : <ImageIcon className="w-6 h-6 text-slate-500" />}
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <p className="text-sm font-medium text-white truncate">
+                      {thumbnailFile ? thumbnailFile.name : "Seleccionar miniatura (Cloudinary)"}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      Esta imagen se mostrará en Explorar
+                    </p>
+                  </div>
+                </label>
+              </div>
+            )}
 
             {/* Zona de Input (Disfrazada de Drag & Drop) */}
             <label className="border-2 border-dashed border-cyan-800/50 hover:border-cyan-500 bg-cyan-950/10 rounded-2xl p-10 flex flex-col items-center justify-center text-center transition-all cursor-pointer group">

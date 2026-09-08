@@ -139,7 +139,9 @@ function PostCard({ index, post }: { index: number, post: any }) {
       <div className={`relative aspect-video overflow-hidden bg-gradient-to-br ${bgGradient} flex items-center justify-center`}>
         <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors duration-500 z-10"></div>
         
-        {post?.fileType === "image" && post?.fileUrl ? (
+        {post?.thumbnailUrl ? (
+          <img src={post.thumbnailUrl} alt={post.title} className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" />
+        ) : post?.fileType === "image" && post?.fileUrl ? (
           <img src={post.fileUrl} alt={post.title} className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" />
         ) : (
           <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-xl transform group-hover:scale-110 transition-transform duration-500 z-20">
