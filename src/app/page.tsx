@@ -56,9 +56,9 @@ export default function Home() {
               Explorar Contenido
               <ArrowRight className="w-4 h-4" />
             </Link>
-            <Link href="/login" className="h-12 px-8 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-white font-medium flex items-center justify-center transition-all backdrop-blur-md">
-              Únete a Omnihub
-            </Link>
+            <a href="https://discord.gg/MdHn35tHJ" target="_blank" rel="noopener noreferrer" className="h-12 px-8 rounded-full bg-[#5865F2]/20 border border-[#5865F2]/40 hover:bg-[#5865F2]/40 text-white font-medium flex items-center justify-center transition-all backdrop-blur-md gap-2 shadow-[0_0_15px_rgba(88,101,242,0.3)]">
+              Únete al Discord
+            </a>
           </div>
         </section>
 

@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, deleteDoc, doc, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, deleteDoc, doc, updateDoc, query, orderBy } from "firebase/firestore";
 import { Trash2, ShieldAlert, FileWarning, Search, ShieldCheck, Users, FileText, UserCheck, UserX } from "lucide-react";
 
 export default function AdminPanel() {
