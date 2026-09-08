@@ -63,7 +63,18 @@ export default function UploadPage() {
         
         // 1. Pedirle permiso (Access Token) al Worker
         const tokenRes = await fetch(`${workerUrl}/api/secure/drive-token`);
-        if (!tokenRes.ok) throw new Error("No se pudo obtener el token de Google Drive del Worker. Verifica que el Worker esté desplegado y configurado.");
+        
+        if (!tokenRes.ok) {
+          let errorMsg = "No se pudo obtener el token de Google Drive del Worker.";
+          try {
+            const errorData = await tokenRes.json();
+            if (errorData.error) errorMsg += ` Detalles: ${errorData.error}`;
+          } catch(e) {
+            errorMsg += ` Verifica que el Worker esté desplegado en: ${workerUrl}`;
+          }
+          throw new Error(errorMsg);
+        }
+        
         const { token, folderId } = await tokenRes.json();
         
         // 2. Subir directamente a Google Drive desde el navegador (bypasseando límites)
