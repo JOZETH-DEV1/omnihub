@@ -59,7 +59,7 @@ export default function UploadPage() {
       } 
       // Si es archivo pesado, usamos Google Drive a través del Worker
       else {
-        const workerUrl = process.env.NEXT_PUBLIC_WORKER_URL || "https://omnihub-worker.tu-usuario.workers.dev";
+        const workerUrl = process.env.NEXT_PUBLIC_WORKER_URL || "https://tiny-pond-a740.jozethperez5.workers.dev";
         
         // 1. Pedirle permiso (Access Token) al Worker
         const tokenRes = await fetch(`${workerUrl}/api/secure/drive-token`);
