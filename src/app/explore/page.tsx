@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { Filter, Flame, Clock, Sparkles, Inbox } from "lucide-react";
-import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { collection, query, orderBy, getDocs, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import VerificationBadge from "@/components/VerificationBadge";
 
 export default function ExplorePage() {
-  const categories = ["Todos", "Minecraft", "Android APKs", "Archivos ZIP", "Audio / Video"];
+  const categories = ["Todos", "Minecraft", "Android APKs", "Archivos ZIP", "Audio / Video", "Otros"];
   const [activeCategory, setActiveCategory] = useState("Todos");
   const [activeFilter, setActiveFilter] = useState("Tendencias");
   const [posts, setPosts] = useState<any[]>([]);
@@ -16,10 +16,16 @@ export default function ExplorePage() {
 
   useEffect(() => {
     async function loadPosts() {
+      setLoading(true);
       try {
-        const q = query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(20));
+        const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
         const querySnapshot = await getDocs(q);
-        const postsData = querySnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+        let postsData = querySnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+        
+        if (activeCategory !== "Todos") {
+          postsData = postsData.filter(post => post.category === activeCategory);
+        }
+        
         setPosts(postsData);
       } catch (error) {
         console.error("Error loading posts:", error);

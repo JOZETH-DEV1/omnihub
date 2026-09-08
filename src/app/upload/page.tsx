@@ -15,6 +15,9 @@ export default function UploadPage() {
   const [fileMode, setFileMode] = useState<"image" | "file">("file");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("Minecraft");
+  
+  const categoriesList = ["Minecraft", "Android APKs", "Archivos ZIP", "Audio / Video", "Otros"];
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -122,6 +125,7 @@ export default function UploadPage() {
       await addDoc(collection(db, "posts"), {
         title,
         description,
+        category,
         fileUrl: finalFileUrl,
         thumbnailUrl: finalThumbnailUrl, // Guardamos la URL de la miniatura si existe
         fileType: fileMode,
@@ -212,6 +216,19 @@ export default function UploadPage() {
                 placeholder="Describe qué hace especial a este archivo..."
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all resize-none"
               ></textarea>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Categoría</label>
+              <select 
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all appearance-none"
+              >
+                {categoriesList.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
             </div>
 
             {/* Zona de Input de Miniatura (Solo si es archivo pesado) */}
