@@ -65,12 +65,12 @@ export default function UploadPage() {
         const tokenRes = await fetch(`${workerUrl}/api/secure/drive-token`);
         
         if (!tokenRes.ok) {
-          let errorMsg = "No se pudo obtener el token de Google Drive del Worker.";
+          let errorMsg = `Falló la conexión al Worker en: ${workerUrl}/api/secure/drive-token. `;
           try {
             const errorData = await tokenRes.json();
-            if (errorData.error) errorMsg += ` Detalles: ${errorData.error}`;
+            if (errorData.error) errorMsg += `(Detalle: ${errorData.error})`;
           } catch(e) {
-            errorMsg += ` Verifica que el Worker esté desplegado en: ${workerUrl}`;
+            errorMsg += `(El worker devolvió un error que no es JSON, revisa que el link sea correcto).`;
           }
           throw new Error(errorMsg);
         }
