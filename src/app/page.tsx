@@ -6,6 +6,7 @@ import { ArrowRight, Sparkles, Layers } from "lucide-react";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
+import VerificationBadge from "@/components/VerificationBadge";
 
 export default function Home() {
   const [recentPosts, setRecentPosts] = useState<any[]>([]);
@@ -127,10 +128,17 @@ function PostCard({ index, post }: { index: number, post: any }) {
         
         <div className="flex items-center justify-between pt-4 border-t border-slate-800">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 overflow-hidden">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 overflow-hidden shrink-0">
                {post.authorPhoto && <img src={post.authorPhoto} className="w-full h-full object-cover" />}
             </div>
-            <span className="text-xs font-medium text-slate-300">@{post.authorUsername}</span>
+            <div className="flex items-center gap-1">
+              <span className="text-xs font-medium text-slate-300">@{post.authorUsername}</span>
+              {post.isVerified && (
+                <div className="scale-75 origin-left">
+                  <VerificationBadge size="sm" />
+                </div>
+              )}
+            </div>
           </div>
           <a href={post.fileUrl} target="_blank" className="text-xs text-cyan-400 font-bold hover:underline">Descargar</a>
         </div>

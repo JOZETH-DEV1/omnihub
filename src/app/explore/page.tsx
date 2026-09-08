@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import { Filter, Flame, Clock, Sparkles, Inbox } from "lucide-react";
 import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import VerificationBadge from "@/components/VerificationBadge";
 
 export default function ExplorePage() {
   const categories = ["Todos", "Minecraft", "Android APKs", "Archivos ZIP", "Audio / Video"];
@@ -162,12 +163,19 @@ function PostCard({ index, post }: { index: number, post: any }) {
         
         <div className="flex items-center justify-between pt-4 border-t border-slate-800">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 overflow-hidden">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 overflow-hidden shrink-0">
               {post?.authorPhoto ? <img src={post.authorPhoto} className="w-full h-full object-cover" /> : null}
             </div>
-            <span className="text-xs font-medium text-slate-300">
-              @{post?.authorUsername || "usuario_pro"}
-            </span>
+            <div className="flex items-center gap-1">
+              <span className="text-xs font-medium text-slate-300">
+                @{post?.authorUsername || "usuario_pro"}
+              </span>
+              {post?.isVerified && (
+                <div className="scale-75 origin-left">
+                  <VerificationBadge size="sm" />
+                </div>
+              )}
+            </div>
           </div>
           <a 
             href={post?.fileUrl || "#"}
