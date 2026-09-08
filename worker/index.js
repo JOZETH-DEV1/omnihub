@@ -7,13 +7,14 @@
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    const path = url.pathname.replace(/\/+/g, '/'); // Limpiar dobles barras (ej: //api/secure -> /api/secure)
     
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: getCorsHeaders() });
     }
     
     try {
-      if (url.pathname === "/api/secure/drive-token") {
+      if (path === "/api/secure/drive-token") {
         return handleDriveToken(env);
       }
       
