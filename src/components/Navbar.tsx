@@ -14,9 +14,9 @@ export default function Navbar() {
       <header className="sticky top-0 z-50 w-full border-b border-cyan-500/10 bg-slate-950/40 backdrop-blur-md supports-[backdrop-filter]:bg-slate-950/20 transition-all duration-300">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-[0_0_15px_rgba(34,211,238,0.4)] group-hover:shadow-[0_0_25px_rgba(34,211,238,0.7)] transition-all">
-                <span className="text-white font-bold text-sm tracking-tighter">OH</span>
+            <Link href="/" className="flex items-center gap-3 group">
+              <div className="w-10 h-10 rounded-full overflow-hidden border border-cyan-500/50 shadow-[0_0_15px_rgba(34,211,238,0.4)] group-hover:shadow-[0_0_25px_rgba(34,211,238,0.7)] transition-all">
+                <img src="/logo.jpg" alt="Omnihub Logo" className="w-full h-full object-cover" />
               </div>
               <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-blue-400 tracking-tight">Omnihub</span>
             </Link>

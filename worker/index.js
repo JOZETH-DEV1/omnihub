@@ -14,6 +14,11 @@ export default {
     }
     
     try {
+      // Endpoint para generar metadatos OG dinámicos (WhatsApp/Telegram)
+      if (path.startsWith("/share/")) {
+        return handleShareOG(path, env);
+      }
+
       if (path === "/api/secure/drive-token") {
         return handleDriveToken(env);
       }
@@ -161,4 +166,68 @@ function str2ab(str) {
 
 function encodeBase64Url(string) {
   return btoa(string).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function handleShareOG(path, env) {
+  const parts = path.split('/');
+  const postId = parts[parts.length - 1];
+  
+  if (!postId || !env.FIREBASE_PROJECT_ID) {
+    return new Response("Missing post ID or FIREBASE_PROJECT_ID in worker env.", { status: 400 });
+  }
+
+  const frontendUrl = env.FRONTEND_URL || "https://omnihub1.pages.dev";
+  const postUrl = `${frontendUrl}/post?id=${postId}`;
+
+  try {
+    // Fetch data directly from Firestore REST API
+    const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${env.FIREBASE_PROJECT_ID}/databases/(default)/documents/posts/${postId}`;
+    const res = await fetch(firestoreUrl);
+    
+    if (!res.ok) {
+      // If post not found, just redirect to home
+      return new Response(`<meta http-equiv="refresh" content="0; url=${frontendUrl}">`, {
+        headers: { "Content-Type": "text/html" }
+      });
+    }
+
+    const data = await res.json();
+    const fields = data.fields || {};
+    
+    const title = fields.title?.stringValue || "Omnihub Post";
+    const description = fields.description?.stringValue || "Mira este aporte en Omnihub.";
+    const imageUrl = fields.thumbnailUrl?.stringValue || (fields.fileType?.stringValue === "image" ? fields.fileUrl?.stringValue : "https://omnihub1.pages.dev/og-default.jpg");
+    
+    const html = `
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="UTF-8">
+        <meta property="og:title" content="${title}">
+        <meta property="og:description" content="${description}">
+        <meta property="og:image" content="${imageUrl}">
+        <meta property="og:url" content="${postUrl}">
+        <meta property="og:type" content="website">
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="${title}">
+        <meta name="twitter:description" content="${description}">
+        <meta name="twitter:image" content="${imageUrl}">
+        <meta http-equiv="refresh" content="0; url=${postUrl}">
+        <title>${title}</title>
+      </head>
+      <body>
+        <p>Redirigiendo al aporte...</p>
+        <script>window.location.href = "${postUrl}";</script>
+      </body>
+      </html>
+    `;
+
+    return new Response(html, {
+      headers: { "Content-Type": "text/html; charset=utf-8" }
+    });
+  } catch (error) {
+    return new Response(`<meta http-equiv="refresh" content="0; url=${postUrl}">`, {
+      headers: { "Content-Type": "text/html" }
+    });
+  }
 }

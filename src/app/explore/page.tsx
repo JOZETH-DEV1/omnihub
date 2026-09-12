@@ -6,6 +6,7 @@ import { Filter, Flame, Clock, Sparkles, Inbox } from "lucide-react";
 import { collection, query, orderBy, getDocs, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import VerificationBadge from "@/components/VerificationBadge";
+import { useRouter } from "next/navigation";
 
 export default function ExplorePage() {
   const categories = ["Todos", "Minecraft", "Android APKs", "Archivos ZIP", "Audio / Video", "Otros"];
@@ -141,8 +142,13 @@ function PostCard({ index, post }: { index: number, post: any }) {
   ];
   const bgGradient = gradients[index % gradients.length];
 
+  const router = useRouter();
+
   return (
-    <div className="group relative rounded-2xl bg-slate-900/40 border border-slate-700/50 overflow-hidden backdrop-blur-md hover:border-cyan-500/50 transition-all duration-500 hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] hover:-translate-y-1 cursor-pointer">
+    <div 
+      onClick={() => router.push(`/post?id=${post.id}`)}
+      className="group relative rounded-2xl bg-slate-900/40 border border-slate-700/50 overflow-hidden backdrop-blur-md hover:border-cyan-500/50 transition-all duration-500 hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] hover:-translate-y-1 cursor-pointer"
+    >
       <div className={`relative aspect-video overflow-hidden bg-gradient-to-br ${bgGradient} flex items-center justify-center`}>
         <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors duration-500 z-10"></div>
         
@@ -183,14 +189,12 @@ function PostCard({ index, post }: { index: number, post: any }) {
               )}
             </div>
           </div>
-          <a 
-            href={post?.fileUrl || "#"}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button 
+            onClick={(e) => { e.stopPropagation(); window.open(post?.fileUrl || "#", "_blank"); }}
             className="text-xs text-cyan-400 bg-cyan-950/50 hover:bg-cyan-900 transition-colors px-4 py-1.5 rounded-lg font-bold border border-cyan-800/50 flex items-center gap-2"
           >
             Descargar
-          </a>
+          </button>
         </div>
       </div>
     </div>
