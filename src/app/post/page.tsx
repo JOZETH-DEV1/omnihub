@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -9,7 +9,7 @@ import { ArrowLeft, Download, Share2, Heart, MessageSquare, AlertTriangle, Check
 import VerificationBadge from "@/components/VerificationBadge";
 import Link from "next/link";
 
-export default function PostPage() {
+function PostContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
   const router = useRouter();
@@ -195,5 +195,13 @@ export default function PostPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function PostPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-950 flex justify-center items-center"><div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div></div>}>
+      <PostContent />
+    </Suspense>
   );
 }
