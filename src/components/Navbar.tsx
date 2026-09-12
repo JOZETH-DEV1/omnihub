@@ -63,7 +63,7 @@ export default function Navbar() {
                 </button>
               </div>
             ) : (
-              <Link href="/login" className="hidden md:flex h-10 px-5 rounded-full items-center justify-center bg-cyan-600 hover:bg-cyan-500 text-white font-medium transition-colors shadow-[0_0_15px_rgba(34,211,238,0.3)]">
+              <Link href="/login" className="flex h-9 px-4 text-sm md:h-10 md:px-5 md:text-base rounded-full items-center justify-center bg-cyan-600 hover:bg-cyan-500 text-white font-medium transition-colors shadow-[0_0_15px_rgba(34,211,238,0.3)]">
                 Acceder
               </Link>
             )}
